@@ -1,0 +1,37 @@
+name: Azure Static Website Deploy (GROUP 3)
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'site/**'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure (Service Principal)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get storage account key
+        id: get_key
+        run: |
+          RG="${{ secrets.AZURE_RESOURCE_GROUP }}"
+          SA="${{ secrets.STORAGE_ACCOUNT_NAME }}"
+          echo "resourceGroup=$RG" >> $GITHUB_OUTPUT
+          KEY=$(az storage account keys list -g "$RG" -n "$SA" --query "[0].value" -o tsv)
+          echo "storage_key=$KEY" >> $GITHUB_OUTPUT
+
+      - name: Upload site to $web
+        run: |
+          echo "Uploading files to storage account"
+          az storage blob upload-batch             --account-name "${{ secrets.STORAGE_ACCOUNT_NAME }}"             --account-key "${{ steps.get_key.outputs.storage_key }}"             -s ./site             -d '$web'             --no-progress
+
+      - name: Show website URL
+        run: |
+          RG="${{ secrets.AZURE_RESOURCE_GROUP }}"
+          SA="${{ secrets.STORAGE_ACCOUNT_NAME }}"
+          az storage account show -n "$SA" -g "$RG" --query "primaryEndpoints.web" -o tsv
