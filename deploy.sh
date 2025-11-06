@@ -26,7 +26,6 @@ az storage blob service-properties update   --account-name "$SA"   --static-webs
 ACCOUNT_KEY=$(az storage account keys list -g "$RG" -n "$SA" --query "[0].value" -o tsv)
 
 # 5) Upload site files to the $web container
-# Assumes there is a local ./site folder next to this script
 az storage blob upload-batch   --account-name "$SA"   --account-key "$ACCOUNT_KEY"   -s ./site   -d '$web'   --no-progress
 
 # 6) Get the web endpoint
